@@ -1,0 +1,106 @@
+Dynamic Group Rules
+resource.id = 'ocid1.autonomousdatabase.oc1.'	
+ALL {resource.type = 'autonomousdatabase', resource.compartment.id = 'ocid1.compartment.'}	
+ALL {resource.compartment.id='ocid1.compartm'}
+
+
+Polcies
+allow group Northeast to manage data-catalog-family in compartment alexp	
+allow group Northeast to read objects in compartment alexp
+allow dynamic-group adb-grp-1 to manage data-catalog-family in compartment alexp	
+allow dynamic-group adb-grp-1 to read objects in compartment alexp
+Allow dynamic-group adb-grp-1 to manage autonomous-databases in compartment alexp
+
+---Step 1    grant access to the resource principal credential to a database user 
+EXEC DBMS_CLOUD_ADMIN.ENABLE_RESOURCE_PRINCIPAL();
+/* SELECT owner, credential_name FROM dba_credentials 
+        WHERE credential_name = 'OCI$RESOURCE_PRINCIPAL' AND owner = 'ADMIN'; */
+--- Step 2
+grant dcat_sync to admin;
+--- Step 3
+    BEGIN
+      DBMS_CLOUD.CREATE_CREDENTIAL (
+        credential_name => 'OCI_NATIVE_CRED',
+        user_ocid              => 'ocid1.bla-bla-bla-bla',
+        tenancy_ocid           => 'ocid1.tenancy.ble-ble-ble',
+        private_key            => 'blu-blu-blu ',
+        fingerprint            => 'bli-bli-bli');
+    END;
+/
+---Step 4 Check if credential was created
+SELECT owner, credential_name
+FROM dba_credentials 
+WHERE credential_name LIKE '%NATIVE%';
+
+---Step 5 Checking in case Step 4 gave nothing
+select * from dba_credentials;
+
+--- Step 6
+select * from all_dcat_connections;
+define dcat_region='us-phoenix-1'
+define dcat_ocid = 'ocid1.datacatalog.oc1.phx.mqdoeioxpg6rgu53fopmyzzcvnigu5faa'
+define dcat_credential ='OCI_NATIVE_CRED'
+define obj_credential = 'OCI_NATIVE_CRED'
+define uri_root = 'https://objectstorage.us-phoenix-1.oraclecloud.com/n/frqap2zhtzbe/b/bucket-20230504-1813/o'
+
+--- Step7 Checking if object storage is accessible using credentials
+select * from dbms_cloud.list_objects('&obj_credential', '&uri_root/');
+select * from dbms_cloud.list_objects('&dcat_credential', '&uri_root/');
+
+--- Step 8 Setting connection
+exec dbms_dcat.set_data_catalog_credential(credential_name => '&dcat_credential');
+exec dbms_dcat.set_object_store_credential(credential_name => '&obj_credential');
+begin
+dbms_dcat.set_data_catalog_conn (
+region => '&dcat_region',
+catalog_id => '&dcat_ocid');
+end;
+
+select * from all_dcat_assets;
+select * from ALL_DCAT_ENTITIES;
+
+--- Step 9 Sync
+begin
+dbms_dcat.run_sync(synced_objects =>
+ '{"asset_list": [
+ {
+ "asset_id":"9b12eb45-320d-4c5a-af17-2a50f7f73feb",
+ "folder_list":[
+ "fde6a2b9-eb35-473b-bf10-3a44aec19392"
+ ]
+ } 
+ ]}'); 
+end;
+
+--- Checking
+EXEC DBMS_DCAT.RUN_SYNC(synced_objects=>'{"asset_list":["*"]}');
+select * from ALL_DCAT_GLOBAL_ACCESSIBLE_CATALOGS;
+
+
+
+
+CREATE TABLE ALL_DCAT_FOLDERS_table (
+  DCAT_CON_ID        VARCHAR2(4000),
+  CATALOG_ID         VARCHAR2(4000),
+  KEY                VARCHAR2(4000),
+  DISPLAY_NAME       VARCHAR2(4000),
+  BUSINESS_NAME      VARCHAR2(4000),
+  DESCRIPTION        VARCHAR2(4000),
+  DATA_ASSET_KEY     VARCHAR2(4000),
+  PARENT_FOLDER_KEY  VARCHAR2(4000),
+  PATH               VARCHAR2(4000),
+  EXTERNAL_KEY       VARCHAR2(4000),
+  TIME_EXTERNAL      TIMESTAMP(6) WITH TIME ZONE,
+  TIME_CREATED       TIMESTAMP(6) WITH TIME ZONE,
+  URI                VARCHAR2(4000),
+  LIFECYCLE_STATE    VARCHAR2(4000)
+);
+
+INSERT INTO ALL_DCAT_FOLDERS_TABLE SELECT * FROM ALL_DCAT_FOLDERS;
+select * from DCAT_ENTITIES;
+select oracle_schema_name, oracle_table_name from dcat_entities;
+
+ 
+select * from DCAT$ORACLE_OBJECT_STORAGE_DATA_ASSET_MOVIESTREAM_LANDING.Movie;
+
+
