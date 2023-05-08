@@ -38,10 +38,10 @@ select * from dba_credentials;
 --- Step 6
 select * from all_dcat_connections;
 define dcat_region='us-phoenix-1'
-define dcat_ocid = 'ocid1.datacatalog.oc1.phx.mqdoeioxpg6rgu53fopmyzzcvnigu5faa'
+define dcat_ocid = 'ocid1.datac'
 define dcat_credential ='OCI_NATIVE_CRED'
 define obj_credential = 'OCI_NATIVE_CRED'
-define uri_root = 'https://objectstorage.us-phoenix-1.oraclecloud.com/n/frqap2zhtzbe/b/bucket-20230504-1813/o'
+define uri_root = 'https://objectstoragn/frqap2zhtzbe/b/bucket-20230504-1813/o'
 
 --- Step7 Checking if object storage is accessible using credentials
 select * from dbms_cloud.list_objects('&obj_credential', '&uri_root/');
@@ -60,7 +60,8 @@ select * from all_dcat_assets;
 select * from ALL_DCAT_ENTITIES;
 
 --- Step 9 Sync
-begin
+EXEC DBMS_DCAT.RUN_SYNC(synced_objects=>'{"asset_list":["*"]}'
+/* begin
 dbms_dcat.run_sync(synced_objects =>
  '{"asset_list": [
  {
@@ -70,7 +71,7 @@ dbms_dcat.run_sync(synced_objects =>
  ]
  } 
  ]}'); 
-end;
+end; */
 
 --- Checking
 EXEC DBMS_DCAT.RUN_SYNC(synced_objects=>'{"asset_list":["*"]}');
